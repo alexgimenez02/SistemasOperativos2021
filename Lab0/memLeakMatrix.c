@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-int** mat;
 
 int** createMatrix( int n, int m) {
     int i;
@@ -12,7 +11,9 @@ int** createMatrix( int n, int m) {
 }
 
 void freeMatrix(int** mat, int n, int m) {
-    int i;
+    for(int i = 0; i<n;i++){
+        free(mat[i]);
+    }
     free(mat);
 }
 
@@ -20,11 +21,12 @@ void freeMatrix(int** mat, int n, int m) {
 int main() {
     int n = 5;
     int m = 10;
-	mat = createMatrix(n,m);
-	freeMatrix(mat,n,m);
-
-    mat[5][10] = 0;   // fill two positions
-    mat[0][0] = 0;
+	int** mat = createMatrix(n,m);
+    
+    freeMatrix(mat,n,m);
+    //Intenta acceder a una matriz que ha sido liberada de memoria
+    //mat[4][9] = 0;   // fill two positions
+    //mat[0][0] = 0;
 
 	return 0;
 }

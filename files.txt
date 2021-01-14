@@ -1,0 +1,4 @@
+files.txt
+Lab0
+main
+main.c
