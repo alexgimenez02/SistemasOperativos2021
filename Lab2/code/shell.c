@@ -33,9 +33,17 @@ int main(int argc, char *argv[]){
     int res = read_split(fd2, cmds[ncmds].cmd, 80, &ch);
     while(res > 0){
         if(ch == ' '){
-            res = read_split(fd2, cmds[ncmds].args[cmds[ncmds].nargs], 80, &ch);
+            res = read_split(fd2, cmds[ncmds].args[++cmds[ncmds].nargs], 80, &ch);
         }else if(ch == '\n'){
-            printf("%d) cmd: %s %s\n",++j,cmds[ncmds].cmd, cmds[ncmds].args[cmds[ncmds].nargs]);
+            if(cmds[ncmds].nargs > 0){
+                printf("%d) cmd: %s ",++j,cmds[ncmds].cmd);
+                for(int i = 0; i < cmds[ncmds].nargs; i++){
+                    printf("argv[%d]: %s ",i+1, cmds[ncmds].args[i+1]);
+                }
+                printf("\n");
+            }else{
+                printf("%d) cmd: %s  %s\n",++j,cmds[ncmds].cmd, cmds[ncmds].args[cmds[ncmds].nargs]);
+            }
             ncmds++;
             res = read_split(fd2, cmds[ncmds].cmd, 80, &ch);   
         }
