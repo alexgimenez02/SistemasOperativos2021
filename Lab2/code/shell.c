@@ -2,6 +2,9 @@
 #include "myutils.c"  
 #include <string.h>
 #include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 
 typedef struct cmd_struct{
     char cmd[80];
@@ -21,10 +24,13 @@ void cmds_list(cmd_type cmds[], int* num){
     }
     char ch2;
     int fd2 = open("cmds_args.txt", O_CREAT | O_RDWR, 0644);
+    //int fd2 = open("cmds_all.txt", O_CREAT | O_RDWR, 0644);
     int res = read_split(fd2, cmds[ncmds].cmd, 80, &ch);
+    int count = 1;
     while(res > 0){
         if(ch == ' '){
-            res = read_split(fd2, cmds[ncmds].args[++cmds[ncmds].nargs], 80, &ch);
+            res = read_split(fd2, cmds[ncmds].args[cmds[ncmds].nargs], 80, &ch);
+            cmds[ncmds].nargs++;
         }else if(ch == '\n'){
             if(cmds[ncmds].nargs > 0){
                 printf("%d) cmd: %s ",++j,cmds[ncmds].cmd);
@@ -37,6 +43,9 @@ void cmds_list(cmd_type cmds[], int* num){
             }
             ncmds++;
             res = read_split(fd2, cmds[ncmds].cmd, 80, &ch);   
+        }else if(ch == '&'){
+            ncmds++;
+            res = read_split(fd2,cmds[ncmds].cmd, 80, &ch);
         }
     }
     num = &ncmds;
@@ -76,7 +85,7 @@ int main(int argc, char *argv[]){
     cmds_list(cmds,&num);
     char buff[10];
     char ch_end;
-    write(0,"- Ejercicio 4.4\n",sizeof("- Ejercicio 4.4\n"));
+    write(0,"- Ejercicio 4.4 & 4.5\n",sizeof("- Ejercicio 4.4 & 4.5\n"));
     while(strcmp(buff,"exit") != 0){
         write(0,"MyShell> ",strlen("MyShell> "));
         read_split(0,buff,5,&ch_end);
@@ -84,28 +93,46 @@ int main(int argc, char *argv[]){
         if(strcmp(buff,"1") == 0 || strcmp(buff,"2") == 0 || strcmp(buff,"3") == 0 || strcmp(buff,"4") == 0 || strcmp(buff,"5") == 0 || strcmp(buff,"6") == 0 || strcmp(buff,"7") == 0 || strcmp(buff,"8") == 0 || strcmp(buff,"9") == 0){
             sscanf(buff,"%d",&char_num);
             char_num--;
-            char* command = cmds[char_num].args[0];
-            int narg = cmds[char_num].nargs;
-            for(int i = 1; i < narg; i++){
-                strcat(command," ");
-                strcat(command,cmds[char_num].args[i]);
-                
-            }
+            int pid = fork();
             if(strcmp(cmds[char_num].cmd,"") != 0){
-                if(cmds[char_num].nargs > 0){
-                    fflush(stdout);
-                    printf("Ejecutando comando: %s ",cmds[char_num].cmd);
-                    for(int i = 0; i < cmds[char_num].nargs; i++){
-                        printf("%s ", cmds[char_num].args[i+1]);
-                    }
                 
+                //fflush(stdout);
+                if(cmds[char_num].nargs > 0){
+                    if(pid != 0){
+                        printf("Ejecutando comando: %s ",cmds[char_num].cmd);
+                        for(int i = 0; i < cmds[char_num].nargs; i++){
+                            printf("%s ", cmds[char_num].args[i]);
+                        } 
+                    } 
+                    else if(pid == 0){                 
+                        char* cm = cmds[char_num].cmd;
+                        char* argv[cmds[char_num].nargs + 2];
+                        argv[0] = cm;
+                        for(int i = 0; i < sizeof(argv)/sizeof(*argv); i++) argv[i+1] = cmds[char_num].args[i];
+                        argv[cmds[char_num].nargs + 1] = NULL;
+                        for(int i = 0; i < cmds[char_num].nargs + 2; i++) //printf("\n%s",argv[i]);
+                        execvp(cm,argv);
+                        _exit(1);                       
+                    }
                 }else{
-                    fflush(stdout);
-                    printf("Ejecutando comando: %s ",cmds[char_num].cmd);
+                    if(pid != 0)
+                        printf("Ejecutando comando: %s ",cmds[char_num].cmd);
+                    if(pid == 0){
+                        char* cm = cmds[char_num].cmd;
+                        char* argv[2];
+                        argv[0] = cm;
+                        argv[1] = NULL;
+                        execvp(cm,argv);
+                        _exit(1);
+                    }
                 }
                 printf("\n");
+                
             }
-            else write(0,"No command on that option.\n",strlen("No command on that option.\n"));
+            else {
+                write(0,"No command on that option.\n",strlen("No command on that option.\n"));
+                if(pid == 0) _exit(2);
+            }
             
         }
         else if(strcmp(buff,"list") == 0){
@@ -113,8 +140,16 @@ int main(int argc, char *argv[]){
         }else if(strcmp(buff,"exit") != 0){
             write(0,"Not a valid command.\n",strlen("Not a valid command.\n"));
         }
-    }
 
+        int status;
+        wait(&status);
+        if ( WIFEXITED(status) ) {   
+            const int es = WEXITSTATUS(status);
+            if(es == 1) printf("Father: Child command found a problem\n");
+            
+        }
+    }
+    
 
     
 }
