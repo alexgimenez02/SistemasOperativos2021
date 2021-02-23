@@ -3,7 +3,7 @@
 #include <unistd.h>    // Unix-like system calls read and write
 #include <fcntl.h>     // Unix-like system calls to open and close
 
-#include "myutils.h"
+#include "myutils.c"
 
 #define R 4  // Constant indicating the image divisions RxR
 
